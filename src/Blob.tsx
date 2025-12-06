@@ -125,22 +125,23 @@ const Blob = () => {
 
   return (
     <mesh>
-      {/* High resolution torus for smooth deformation */}
-      <torusGeometry args={[1, 0.3, 256, 512]} />
+      {/* Twisted torus knot for infinity/mobius shape */}
+      <torusKnotGeometry args={[1, 0.35, 256, 64, 2, 3]} />
       <meshPhysicalMaterial
         ref={materialRef}
         onBeforeCompile={onBeforeCompile}
         transmission={1}
         roughness={0}
-        metalness={0.1}
-        thickness={0.5}
+        metalness={0}
+        thickness={0.2} // Thinner for soap bubble look
         iridescence={1}
-        iridescenceIOR={1.8}
-        iridescenceThicknessRange={[100, 1000]}
+        iridescenceIOR={1.5} // Tuned for rainbow
+        iridescenceThicknessRange={[100, 800]}
         clearcoat={1}
         clearcoatRoughness={0}
         color={"#ffffff"}
-        ior={1.5}
+        ior={1.1} // Close to air/soap bubble
+        dispersion={5} // Chromatic aberration in the material
       />
     </mesh>
   );
