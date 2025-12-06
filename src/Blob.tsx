@@ -81,8 +81,8 @@ const Blob = () => {
   // Uniforms to pass time to the shader
   const uniforms = useRef({
     uTime: { value: 0 },
-    uIntensity: { value: 0.4 }, // How much it wobbles
-    uSpeed: { value: 0.5 }, // How fast it wobbles
+    uIntensity: { value: 0.6 }, // Increased intensity
+    uSpeed: { value: 0.4 }, // Slightly slower for elegance
   });
 
   useFrame((state) => {
@@ -113,7 +113,8 @@ const Blob = () => {
         #include <begin_vertex>
         
         // Calculate noise based on position and time
-        float noise = snoise(vec3(position.x * 1.5, position.y * 1.5, position.z * 1.5 + uTime * uSpeed));
+        // Lower frequency for larger, more fluid shapes
+        float noise = snoise(vec3(position.x * 0.6, position.y * 0.6, position.z * 0.6 + uTime * uSpeed));
         
         // Displace along normal
         vec3 displacement = normal * noise * uIntensity;
@@ -125,18 +126,21 @@ const Blob = () => {
   return (
     <mesh>
       {/* High resolution torus for smooth deformation */}
-      <torusGeometry args={[1, 0.4, 128, 256]} />
+      <torusGeometry args={[1, 0.3, 256, 512]} />
       <meshPhysicalMaterial
         ref={materialRef}
         onBeforeCompile={onBeforeCompile}
-        transmission={1} // Glass-like
-        roughness={0} // Smooth
-        thickness={1.5} // Volume simulation
-        iridescence={1} // Soap bubble rainbow effect
-        iridescenceIOR={1.33}
+        transmission={1}
+        roughness={0}
+        metalness={0.1}
+        thickness={0.5}
+        iridescence={1}
+        iridescenceIOR={1.8}
+        iridescenceThicknessRange={[100, 1000]}
         clearcoat={1}
         clearcoatRoughness={0}
         color={"#ffffff"}
+        ior={1.5}
       />
     </mesh>
   );
