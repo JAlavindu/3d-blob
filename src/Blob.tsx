@@ -77,18 +77,46 @@ const noiseGLSL = `
 
 const Blob = () => {
   const materialRef = useRef<THREE.MeshPhysicalMaterial>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const hover = useRef(false);
 
   // Uniforms to pass time to the shader
   const uniforms = useRef({
     uTime: { value: 0 },
-    uIntensity: { value: 0.6 }, // Increased intensity
-    uSpeed: { value: 0.4 }, // Slightly slower for elegance
+    uIntensity: { value: 0.3 },
+    uSpeed: { value: 0.4 },
+    uMouse: { value: new THREE.Vector2(0, 0) },
   });
 
   useFrame((state) => {
     if (materialRef.current) {
       // Update time uniform
       uniforms.current.uTime.value = state.clock.getElapsedTime();
+
+      // Smoothly interpolate mouse position
+      uniforms.current.uMouse.value.lerp(state.pointer, 0.1);
+
+      // Dynamic intensity based on hover
+      const targetIntensity = hover.current ? 0.8 : 0.3;
+      uniforms.current.uIntensity.value = THREE.MathUtils.lerp(
+        uniforms.current.uIntensity.value,
+        targetIntensity,
+        0.05
+      );
+
+      // Rotate mesh slightly based on mouse
+      if (meshRef.current) {
+        meshRef.current.rotation.x = THREE.MathUtils.lerp(
+          meshRef.current.rotation.x,
+          state.pointer.y * 0.2,
+          0.05
+        );
+        meshRef.current.rotation.y = THREE.MathUtils.lerp(
+          meshRef.current.rotation.y,
+          state.pointer.x * 0.2,
+          0.05
+        );
+      }
     }
   });
 
@@ -96,12 +124,14 @@ const Blob = () => {
     shader.uniforms.uTime = uniforms.current.uTime;
     shader.uniforms.uIntensity = uniforms.current.uIntensity;
     shader.uniforms.uSpeed = uniforms.current.uSpeed;
+    shader.uniforms.uMouse = uniforms.current.uMouse;
 
     // Inject noise function
     shader.vertexShader = `
       uniform float uTime;
       uniform float uIntensity;
       uniform float uSpeed;
+      uniform vec2 uMouse;
       ${noiseGLSL}
       ${shader.vertexShader}
     `;
@@ -112,9 +142,15 @@ const Blob = () => {
       `
         #include <begin_vertex>
         
-        // Calculate noise based on position and time
-        // Lower frequency for larger, more fluid shapes
-        float noise = snoise(vec3(position.x * 0.6, position.y * 0.6, position.z * 0.6 + uTime * uSpeed));
+        // Calculate noise based on position, time, and mouse
+        // Mouse interaction distorts the noise field
+        vec3 noisePos = vec3(
+          position.x * 0.6 + uMouse.x * 2.0, 
+          position.y * 0.6 + uMouse.y * 2.0, 
+          position.z * 0.6 + uTime * uSpeed
+        );
+        
+        float noise = snoise(noisePos);
         
         // Displace along normal
         vec3 displacement = normal * noise * uIntensity;
@@ -124,7 +160,11 @@ const Blob = () => {
   }, []);
 
   return (
-    <mesh>
+    <mesh
+      ref={meshRef}
+      onPointerOver={() => (hover.current = true)}
+      onPointerOut={() => (hover.current = false)}
+    >
       {/* Twisted torus knot for infinity/mobius shape */}
       <torusKnotGeometry args={[1, 0.35, 256, 64, 2, 3]} />
       <meshPhysicalMaterial
