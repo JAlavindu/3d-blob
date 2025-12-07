@@ -143,17 +143,19 @@ const Blob = () => {
         #include <begin_vertex>
         
         // Calculate noise based on position, time, and mouse
-        // Mouse interaction distorts the noise field
         vec3 noisePos = vec3(
-          position.x * 0.6 + uMouse.x * 2.0, 
-          position.y * 0.6 + uMouse.y * 2.0, 
-          position.z * 0.6 + uTime * uSpeed
+          position.x * 0.5 + uMouse.x * 1.0, 
+          position.y * 0.5 + uMouse.y * 1.0, 
+          position.z * 0.5 + uTime * uSpeed
         );
         
         float noise = snoise(noisePos);
         
-        // Displace along normal
-        vec3 displacement = normal * noise * uIntensity;
+        // Varying thickness for ribbon effect
+        float thickness = 0.5 + 0.5 * sin(position.x * 3.0 + uTime);
+        
+        // Displace along normal with varying intensity
+        vec3 displacement = normal * noise * uIntensity * (1.0 + thickness);
         transformed += displacement;
       `
     );
@@ -165,23 +167,24 @@ const Blob = () => {
       onPointerOver={() => (hover.current = true)}
       onPointerOut={() => (hover.current = false)}
     >
-      {/* Twisted torus knot for infinity/mobius shape */}
-      <torusKnotGeometry args={[1, 0.35, 256, 64, 2, 3]} />
+      {/* Complex twisted torus knot for ribbon-like shape */}
+      <torusKnotGeometry args={[1, 0.3, 256, 64, 3, 5]} />
       <meshPhysicalMaterial
         ref={materialRef}
         onBeforeCompile={onBeforeCompile}
         transmission={1}
         roughness={0}
-        metalness={0}
-        thickness={0.2} // Thinner for soap bubble look
+        metalness={0.5}
+        thickness={0.1}
         iridescence={1}
-        iridescenceIOR={1.5} // Tuned for rainbow
+        iridescenceIOR={2.2}
         iridescenceThicknessRange={[100, 800]}
         clearcoat={1}
         clearcoatRoughness={0}
         color={"#ffffff"}
-        ior={1.1} // Close to air/soap bubble
-        dispersion={5} // Chromatic aberration in the material
+        ior={1.2}
+        dispersion={2}
+        side={THREE.DoubleSide}
       />
     </mesh>
   );
